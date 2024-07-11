@@ -202,7 +202,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
         delta
     ]
 
-#newton_raphson(Y,V,theta,delta,[2],p_sched=[-4,2],q_sched=[-2.5],p_curr=[-1.14,0.5616],q_curr=[-2.28],delta_curr=[0,0],v_curr=[1])
+# newton_raphson(Y,V,theta,delta,[2],p_sched=[-4,2],q_sched=[-2.5],p_curr=[-1.14,0.5616],q_curr=[-2.28],delta_curr=[0,0],v_curr=[1])
 # newton_raphson(Y,[1.05,0.9734513274336283,1.04],theta,
 #                delta=[0,-0.0452628,-0.00771829],pv_index=[2],
 #                p_sched=[-4,2],q_sched=[-2.5],p_curr=[-3.90078211,1.97828507],q_curr=[-2.44908602],
