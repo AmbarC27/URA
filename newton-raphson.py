@@ -199,7 +199,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
         V,
         P,
         Q,
-        delta
+        delta,
     ]
 
 # newton_raphson(Y,V,theta,delta,[2],p_sched=[-4,2],q_sched=[-2.5],p_curr=[-1.14,0.5616],q_curr=[-2.28],delta_curr=[0,0],v_curr=[1])
@@ -212,3 +212,6 @@ newton_raphson(Y,[1.05,0.9716841511285939,1.04],theta,
                p_sched=[-4,2],q_sched=[-2.5],p_curr=[-3.99978342,1.99996179],q_curr=[-2.49985682],
                delta_curr=[-0.04705814900063786,-0.008703361367510957],v_curr=[0.9716841511285939])
 ## Look at p_curr,q_curr
+
+## v_curr - remove index 0 and indices in pv_index from V
+## delta_curr = delta[1:] as the first bus is the only one whos delta wouldn't be changing
