@@ -1,52 +1,54 @@
 import numpy as np 
 
-## Given variables
+## Give code running instructions
+
+## Add commenting
+
+## Look for other examples in the book if possible
+
+## Given variables used for the toy example
 Y = [[20-50j,-10+20j,-10+30j],
      [-10+20j,26-52j,-16+32j],
      [-10+30j,-16+32j,26-62j]]
 V = [1.05,1,1.04]
-theta = np.angle(Y)
-delta = np.zeros(3)
-
-## Need to be calculated
+theta = np.angle(Y) ## theta is the angle for each entry in Y matrix
+delta = np.zeros(3) ## initially delta is all zero
 
 def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_curr,v_curr):
-    N = len(V)
-    # holds theta_ij - delta_i + delta_j
+    N = len(V) ## No. slack buses
+
+    # angle matrix holds theta_ij - delta_i + delta_j
     angle = np.zeros([N,N])
     for i in range(len(angle[0])):
         for j in range(len(angle[1])):
             angle[i,j] = theta[i,j] - delta[i] + delta[j]
-    # print('angle1',angle)
 
-    # print(np.absolute(Y))
-
+    ## np.absolute(Y) is the magnitude for each entry in Y matrix
+    ## Y_cos = |Y|cos(theta)
     Y_cos = np.absolute(Y)*np.cos(angle)
-    # print('cosangle',np.cos(angle))
-    # print(np.absolute(Y))
-    VtY_cos = np.matmul(np.transpose(np.absolute(V)),np.transpose(Y_cos))
-    # P = np.absolute(V)*VtY_cos Look into this one
-    # print('vty_cos1',VtY_cos)
+    ## VtY_cos = |V||Y|cos(theta)
+    # VtY_cos = np.matmul(np.transpose(np.absolute(V)),np.transpose(Y_cos))
 
+    ## Y_sin = |Y|sin(theta)
     Y_sin = np.absolute(Y)*np.sin(angle)
-    VtY_sin = np.matmul(np.transpose(np.absolute(V)),Y_sin)
-    # Q = -1*np.absolute(V)*VtY_sin Look into this one
+    ## VtY_sin = |V||Y|sin(theta)
+    # VtY_sin = np.matmul(np.transpose(np.absolute(V)),Y_sin)
 
-    sum_VtY_cos = sum(VtY_cos)
-    P = np.absolute(V)*sum_VtY_cos
+    # sum_VtY_cos = sum(VtY_cos) ## stores the sum of V||Y|cos(theta) for each i
+    # P = np.absolute(V)*sum_VtY_cos 
 
-    sum_VtY_sin = sum(VtY_sin)
-    Q = -1*np.absolute(V)*sum_VtY_sin
+    # sum_VtY_sin = sum(VtY_sin) ## stores the sum of V||Y|sin(theta) for each i
+    # Q = -1*np.absolute(V)*sum_VtY_sin 
 
-    ####
+    #### The following block calculates P and Q
 
     P = np.zeros(N)
     Q = np.zeros(N)
 
     for i in range(N):
         for j in range(N):
-            P[i] += np.abs(V[i]) * np.abs(V[j]) * Y_cos[i][j]
-            Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j]
+            P[i] += np.abs(V[i]) * np.abs(V[j]) * Y_cos[i][j] ## P = |V_i||V_j||Y_ij|cos(theta)
+            Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j] ## Q = |V_i||V_j||Y_ij|sin(theta)
 
     ####
 
@@ -54,6 +56,12 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     print(P)
     print(Q)
 
+    ## We start building the jacobian matrix by building it in four pieces
+    ## Jacobian matrix is built by merging the submatrices J1,J2,J3,J4
+    ## Each of J1,J2,J3,J4 are built using the equatons in the Power System Analysis
+    ## textbook, splitting each matrix into diagonal and off-diagonal elements
+
+    ## J1 is the top left submatirx
     J1 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
@@ -69,6 +77,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
                 J1[i,j] = -1*np.absolute(V[i]*V[j])*Y_sin[i,j]
 
 
+    ## J2 is the topright submatrix
     J2 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
@@ -83,6 +92,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
             if i != j:
                 J2[i,j] = np.absolute(V[i])*Y_cos[i,j]
 
+    ## J3 is the bottom-left submatrix
     J3 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
@@ -97,6 +107,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
             if i != j:
                 J3[i,j] = -1*np.absolute(V[i]*V[j])*Y_cos[i,j]
 
+    ## J4 is the bottom-right submatrix
     J4 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
