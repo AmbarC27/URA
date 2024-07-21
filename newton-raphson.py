@@ -11,9 +11,9 @@ delta = np.zeros(3)
 ## Need to be calculated
 
 def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_curr,v_curr):
-    N = 3
+    N = len(V)
     # holds theta_ij - delta_i + delta_j
-    angle = np.zeros([3,3])
+    angle = np.zeros([N,N])
     for i in range(len(angle[0])):
         for j in range(len(angle[1])):
             angle[i,j] = theta[i,j] - delta[i] + delta[j]
@@ -40,11 +40,11 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
 
     ####
 
-    P = np.zeros(3)
-    Q = np.zeros(3)
+    P = np.zeros(N)
+    Q = np.zeros(N)
 
-    for i in range(3):
-        for j in range(3):
+    for i in range(N):
+        for j in range(N):
             P[i] += np.abs(V[i]) * np.abs(V[j]) * Y_cos[i][j]
             Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j]
 
@@ -54,7 +54,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     print(P)
     print(Q)
 
-    J1 = np.zeros([3,3])
+    J1 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
         val = 0
@@ -69,7 +69,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
                 J1[i,j] = -1*np.absolute(V[i]*V[j])*Y_sin[i,j]
 
 
-    J2 = np.zeros([3,3])
+    J2 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
         val = 0
@@ -83,7 +83,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
             if i != j:
                 J2[i,j] = np.absolute(V[i])*Y_cos[i,j]
 
-    J3 = np.zeros([3,3])
+    J3 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
         val = 0
@@ -97,7 +97,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
             if i != j:
                 J3[i,j] = -1*np.absolute(V[i]*V[j])*Y_cos[i,j]
 
-    J4 = np.zeros([3,3])
+    J4 = np.zeros([N,N])
     ## Diagonal
     for i in range(len(J1[0])):
         val = 0
@@ -123,6 +123,12 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     PQ = np.delete(PQ,[0, N] + pv_indexes_to_remove)
     # print(PQ)
 
+    # delta_curr = delta[1:]
+    # v_curr = []
+    # for i in range(N):
+    #     if i not in ([0] + pv_index):
+    #         v_curr.append(i)
+
     jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=1) ## column
     jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=0) ## row
     # print(jacobian.shape)
@@ -132,6 +138,9 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     q_res = np.array(q_sched) - np.array(q_curr)
     print("residuals",np.concatenate([p_res,q_res],axis=0))
     x = np.linalg.solve(jacobian,np.concatenate([p_res,q_res],axis=0))
+    print('x :',x)
+    print('delta_curr :',delta_curr)
+    print('v_curr :',v_curr)
     updated_values = x + np.concatenate([delta_curr,v_curr],axis=0)
     # print(updated_values)
     ## update deltas and Vs and then update p_curr and q_curr
@@ -156,7 +165,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     print("updated V: ",V)
 
     # holds theta_ij - delta_i + delta_j
-    angle = np.zeros([3,3])
+    angle = np.zeros([N,N])
     for i in range(len(angle[0])):
         for j in range(len(angle[1])):
             angle[i,j] = theta[i,j] - delta[i] + delta[j]
@@ -182,11 +191,11 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
 
     ####
 
-    P = np.zeros(3)
-    Q = np.zeros(3)
+    P = np.zeros(N)
+    Q = np.zeros(N)
 
-    for i in range(3):
-        for j in range(3):
+    for i in range(N):
+        for j in range(N):
             P[i] += np.abs(V[i]) * np.abs(V[j]) * Y_cos[i][j]
             Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j]
 
@@ -195,23 +204,60 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     print("P,Q")
     print(P)
     print(Q)
-    return [
-        V,
-        P,
-        Q,
-        delta,
-    ]
+    return V,P,Q,delta
 
-# newton_raphson(Y,V,theta,delta,[2],p_sched=[-4,2],q_sched=[-2.5],p_curr=[-1.14,0.5616],q_curr=[-2.28],delta_curr=[0,0],v_curr=[1])
+def converged(list1,list2,tolerance):
+    ## len(list1) has to be len(list2)
+    for i in range(len(list1)):
+        if abs(list1[i] - list2[i]) > tolerance:
+            return False
+    return True
+
+
+def newton_method(Y,V,pv_index,p_sched,q_sched,p_initial,q_initial,tolerance):
+    theta = np.angle(Y)
+    delta = np.zeros(3)
+    active_p = [1,2]
+    active_q = [1]
+    p_curr = [-1.14,0.5616]
+    q_curr = [-2.28]
+    delta_curr = [0,0]
+    v_curr = [1]
+    V,P,Q,delta = newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_initial,q_initial,delta_curr,v_curr)
+    p_curr = P[1:]
+    q_curr = [Q[1]]
+    delta_curr = delta[1:]
+    v_curr = [V[1]]
+    i = 0
+    while not (converged(p_sched,p_curr,tolerance) and converged(q_sched,q_curr,tolerance)):
+        i += 1
+        print('iteration: ',i)
+        V,P,Q,delta = newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_curr,v_curr)
+        p_curr = P[1:]
+        q_curr = [Q[1]]
+        delta_curr = delta[1:]
+        v_curr = [V[1]]
+        print('p_curr: ',p_curr)
+        print('q_curr: ',q_curr)
+    print(P)
+    print(Q)
+
+newton_method(Y,V,pv_index=[2],p_sched=[-4,2],q_sched=[-2.5],p_initial=[-1.14,0.5616],q_initial=[-2.28],tolerance=0.0001)
+
+
+# newton_raphson(Y,V,theta,delta,[2],p_sched=[-4,2],q_sched=[-2.5],p_curr=[-1.14,0.5616],q_curr=[-2.28],
+#                delta_curr=[0,0],v_curr=[1])
 # newton_raphson(Y,[1.05,0.9734513274336283,1.04],theta,
 #                delta=[0,-0.0452628,-0.00771829],pv_index=[2],
 #                p_sched=[-4,2],q_sched=[-2.5],p_curr=[-3.90078211,1.97828507],q_curr=[-2.44908602],
 #                delta_curr=[-0.0452628,-0.00771829],v_curr=[0.97345133])
-newton_raphson(Y,[1.05,0.9716841511285939,1.04],theta,
-               delta=[0,-0.04705814900063786,-0.008703361367510957],pv_index=[2],
-               p_sched=[-4,2],q_sched=[-2.5],p_curr=[-3.99978342,1.99996179],q_curr=[-2.49985682],
-               delta_curr=[-0.04705814900063786,-0.008703361367510957],v_curr=[0.9716841511285939])
+# newton_raphson(Y,[1.05,0.9716841511285939,1.04],theta,
+#                delta=[0,-0.04705814900063786,-0.008703361367510957],pv_index=[2],
+#                p_sched=[-4,2],q_sched=[-2.5],p_curr=[-3.99978342,1.99996179],q_curr=[-2.49985682],
+#                delta_curr=[-0.04705814900063786,-0.008703361367510957],v_curr=[0.9716841511285939])
 ## Look at p_curr,q_curr
 
 ## v_curr - remove index 0 and indices in pv_index from V
 ## delta_curr = delta[1:] as the first bus is the only one whos delta wouldn't be changing
+
+## Need to look at p_curr and q_curr
