@@ -24,21 +24,12 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
             angle[i,j] = theta[i,j] - delta[i] + delta[j]
 
     ## np.absolute(Y) is the magnitude for each entry in Y matrix
+            
     ## Y_cos = |Y|cos(theta)
     Y_cos = np.absolute(Y)*np.cos(angle)
-    ## VtY_cos = |V||Y|cos(theta)
-    # VtY_cos = np.matmul(np.transpose(np.absolute(V)),np.transpose(Y_cos))
 
     ## Y_sin = |Y|sin(theta)
     Y_sin = np.absolute(Y)*np.sin(angle)
-    ## VtY_sin = |V||Y|sin(theta)
-    # VtY_sin = np.matmul(np.transpose(np.absolute(V)),Y_sin)
-
-    # sum_VtY_cos = sum(VtY_cos) ## stores the sum of V||Y|cos(theta) for each i
-    # P = np.absolute(V)*sum_VtY_cos 
-
-    # sum_VtY_sin = sum(VtY_sin) ## stores the sum of V||Y|sin(theta) for each i
-    # Q = -1*np.absolute(V)*sum_VtY_sin 
 
     #### The following block calculates P and Q
 
@@ -48,7 +39,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     for i in range(N):
         for j in range(N):
             P[i] += np.abs(V[i]) * np.abs(V[j]) * Y_cos[i][j] ## P = |V_i||V_j||Y_ij|cos(theta)
-            Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j] ## Q = |V_i||V_j||Y_ij|sin(theta)
+            Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j] ## Q = -|V_i||V_j||Y_ij|sin(theta)
 
     ####
 
@@ -122,40 +113,32 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
             if i != j:
                 J4[i,j] = -1*np.absolute(V[i])*Y_sin[i,j]
 
-    jacobian = np.block([[J1,J2],[J3,J4]])
-    # print(jacobian.shape)
-    # print(jacobian)
+    jacobian = np.block([[J1,J2],[J3,J4]]) ## merge the four submatrices to get J
+
+    ## obtain the indices of the rows and columns which need to be removed from the jacobian
     pv_indexes_to_remove = []
     for idx in pv_index:
         pv_indexes_to_remove.append(N+idx)
     
-    PQ = np.concatenate([P,Q],axis=0)
-    # print(PQ)
-    PQ = np.delete(PQ,[0, N] + pv_indexes_to_remove)
-    # print(PQ)
+    PQ = np.concatenate([P,Q],axis=0) ## PQ is the vector P and Q stacked vertically
+    PQ = np.delete(PQ,[0, N] + pv_indexes_to_remove) ## Get rid of necessary PQ vector indices
 
-    # delta_curr = delta[1:]
-    # v_curr = []
-    # for i in range(N):
-    #     if i not in ([0] + pv_index):
-    #         v_curr.append(i)
-
-    jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=1) ## column
-    jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=0) ## row
-    # print(jacobian.shape)
+    jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=1) ## column deletion
+    jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=0) ## row deletion
     print("jacobian")
     print(jacobian)
-    p_res = np.array(p_sched) - np.array(p_curr)
-    q_res = np.array(q_sched) - np.array(q_curr)
-    print("residuals",np.concatenate([p_res,q_res],axis=0))
-    x = np.linalg.solve(jacobian,np.concatenate([p_res,q_res],axis=0))
+    p_res = np.array(p_sched) - np.array(p_curr) ## obtain P_res
+    q_res = np.array(q_sched) - np.array(q_curr) ## obtain Q_res
+    print("residuals",np.concatenate([p_res,q_res],axis=0)) ## stack together P_res and Q_res vertically
+    x = np.linalg.solve(jacobian,np.concatenate([p_res,q_res],axis=0)) ## x = Jacobian * [p_res,q_res] vertically stacked
+
+    ## Printing these values while running to verify their values
     print('x :',x)
     print('delta_curr :',delta_curr)
     print('v_curr :',v_curr)
-    updated_values = x + np.concatenate([delta_curr,v_curr],axis=0)
-    # print(updated_values)
-    ## update deltas and Vs and then update p_curr and q_curr
-    # return updated_values
+
+    ##
+    updated_values = x + np.concatenate([delta_curr,v_curr],axis=0) ## New values of P and Q 
 
     ## The updated values consist of delta's and V's
     ## All buses apart from slack bus (index 0) need their delta's changed
@@ -165,6 +148,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     updated_voltages = updated_values[-len(pv_index):]
     delta[1:] = updated_deltas
 
+    ## Updating V indices and delta indices which need to be updated
     v_index = 0
     pv_index_set = set(idx for idx in pv_index)
     for i in range(len(V)):
@@ -180,35 +164,22 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     for i in range(len(angle[0])):
         for j in range(len(angle[1])):
             angle[i,j] = theta[i,j] - delta[i] + delta[j]
-    # print('angle2',angle)
 
-    # print(np.absolute(Y))
-
+    
+    ## Recalculating all values which were calculated earlier but with the updated values
     Y_cos = np.absolute(Y)*np.cos(angle)
-    # print(Y_cos)
-    VtY_cos = np.matmul(np.transpose(np.absolute(V)),Y_cos)
-    # P = np.absolute(V)*VtY_cos Look into this one
-    # print('vty_cos2',VtY_cos)
 
     Y_sin = np.absolute(Y)*np.sin(angle)
-    VtY_sin = np.matmul(np.transpose(np.absolute(V)),Y_sin)
-    # Q = -1*np.absolute(V)*VtY_sin Look into this one
 
-    sum_VtY_cos = sum(VtY_cos)
-    P = np.absolute(V)*sum_VtY_cos
-
-    sum_VtY_sin = sum(VtY_sin)
-    Q = -1*np.absolute(V)*sum_VtY_sin
-
-    ####
+    #### The following block calculates P and Q
 
     P = np.zeros(N)
     Q = np.zeros(N)
 
     for i in range(N):
         for j in range(N):
-            P[i] += np.abs(V[i]) * np.abs(V[j]) * Y_cos[i][j]
-            Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j]
+            P[i] += np.abs(V[i]) * np.abs(V[j]) * Y_cos[i][j] ## P = |V_i||V_j||Y_ij|cos(theta)
+            Q[i] -= np.abs(V[i]) * np.abs(V[j]) * Y_sin[i][j] ## Q = -|V_i||V_j||Y_ij|sin(theta)
 
     ####
 
@@ -218,6 +189,9 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     return V,P,Q,delta
 
 def converged(list1,list2,tolerance):
+    ## Function to check whether two vectors have converged in value by checkig both
+    ## vectors element-wise
+
     ## len(list1) has to be len(list2)
     for i in range(len(list1)):
         if abs(list1[i] - list2[i]) > tolerance:
@@ -226,6 +200,9 @@ def converged(list1,list2,tolerance):
 
 
 def newton_method(Y,V,pv_index,p_sched,q_sched,p_initial,q_initial,tolerance):
+    '''
+    Full function which gives the initial conditions for the system, and returns the optimized system
+    '''
     theta = np.angle(Y)
     delta = np.zeros(3)
     active_p = [1,2]
@@ -255,6 +232,7 @@ def newton_method(Y,V,pv_index,p_sched,q_sched,p_initial,q_initial,tolerance):
 
 newton_method(Y,V,pv_index=[2],p_sched=[-4,2],q_sched=[-2.5],p_initial=[-1.14,0.5616],q_initial=[-2.28],tolerance=0.0001)
 
+## Uncomment the code below to run it and verify the calculations
 
 # newton_raphson(Y,V,theta,delta,[2],p_sched=[-4,2],q_sched=[-2.5],p_curr=[-1.14,0.5616],q_curr=[-2.28],
 #                delta_curr=[0,0],v_curr=[1])
@@ -266,9 +244,3 @@ newton_method(Y,V,pv_index=[2],p_sched=[-4,2],q_sched=[-2.5],p_initial=[-1.14,0.
 #                delta=[0,-0.04705814900063786,-0.008703361367510957],pv_index=[2],
 #                p_sched=[-4,2],q_sched=[-2.5],p_curr=[-3.99978342,1.99996179],q_curr=[-2.49985682],
 #                delta_curr=[-0.04705814900063786,-0.008703361367510957],v_curr=[0.9716841511285939])
-## Look at p_curr,q_curr
-
-## v_curr - remove index 0 and indices in pv_index from V
-## delta_curr = delta[1:] as the first bus is the only one whos delta wouldn't be changing
-
-## Need to look at p_curr and q_curr
