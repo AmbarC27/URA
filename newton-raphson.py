@@ -15,7 +15,7 @@ theta = np.angle(Y) ## theta is the angle for each entry in Y matrix
 delta = np.zeros(3) ## initially delta is all zero
 
 def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_curr,v_curr):
-    N = len(V) ## No. slack buses
+    N = len(V) ## No. buses
 
     # angle matrix holds theta_ij - delta_i + delta_j
     angle = np.zeros([N,N])
@@ -118,13 +118,16 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     ## obtain the indices of the rows and columns which need to be removed from the jacobian
     pv_indexes_to_remove = []
     for idx in pv_index:
+        pv_indexes_to_remove.append(idx)
         pv_indexes_to_remove.append(N+idx)
     
     PQ = np.concatenate([P,Q],axis=0) ## PQ is the vector P and Q stacked vertically
     PQ = np.delete(PQ,[0, N] + pv_indexes_to_remove) ## Get rid of necessary PQ vector indices
 
-    jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=1) ## column deletion
-    jacobian = np.delete(jacobian, [0, N] + pv_indexes_to_remove, axis=0) ## row deletion
+    print("prejacobian")
+    print(jacobian)
+    jacobian = np.delete(jacobian, list(set([0, N] + pv_indexes_to_remove)), axis=1) ## column deletion
+    jacobian = np.delete(jacobian, list(set([0, N] + pv_indexes_to_remove)), axis=0) ## row deletion
     print("jacobian")
     print(jacobian)
     p_res = np.array(p_sched) - np.array(p_curr) ## obtain P_res
@@ -204,14 +207,14 @@ def newton_method(Y,V,pv_index,p_sched,q_sched,p_initial,q_initial,tolerance):
     Full function which gives the initial conditions for the system, and returns the optimized system
     '''
     theta = np.angle(Y)
-    delta = np.zeros(3)
-    active_p = [1,2]
-    active_q = [1]
-    p_curr = [-1.14,0.5616]
-    q_curr = [-2.28]
-    delta_curr = [0,0]
+    delta = np.zeros(len(V))
+    # active_p = [1,2]
+    # active_q = [1]
+    # p_curr = [-1.14,0.5616]
+    # q_curr = [-2.28]
+    # delta_curr = [0,0]
     v_curr = [1]
-    V,P,Q,delta = newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_initial,q_initial,delta_curr,v_curr)
+    V,P,Q,delta = newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_initial,q_initial,delta,V)
     p_curr = P[1:]
     q_curr = [Q[1]]
     delta_curr = delta[1:]
@@ -230,7 +233,15 @@ def newton_method(Y,V,pv_index,p_sched,q_sched,p_initial,q_initial,tolerance):
     print(P)
     print(Q)
 
-newton_method(Y,V,pv_index=[2],p_sched=[-4,2],q_sched=[-2.5],p_initial=[-1.14,0.5616],q_initial=[-2.28],tolerance=0.0001)
+# newton_method(Y,V,pv_index=[2],p_sched=[-4,2],q_sched=[-2.5],p_initial=[-1.14,0.5616],q_initial=[-2.28],tolerance=0.0001)
+Y = [[2-20j,-1+10j,0,-1+10j,0],
+     [-1+10j,3-30j,-1+10j,-1+10j,0],
+     [0,-1+10j,2-20j,0,-1+10j],
+     [-1+10j,-1+10j,0,3-30j,-1+10j],
+     [0,0,-1+10j,-1+10j,2-20j]]
+V = [1,1,1,1,1]
+
+newton_method(Y,V,pv_index=[0,1],p_sched=[0.883,0.0076,-1.7137,-1.7355],q_sched=[-(1-0.5983j),-(0.8-0.5496j)],p_initial=[1,0.1,0,0],q_initial=[-1+1j,-1],tolerance=0.0001)
 
 ## Uncomment the code below to run it and verify the calculations
 
