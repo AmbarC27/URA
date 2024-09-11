@@ -1,4 +1,6 @@
 import numpy as np 
+## If gives error that numpy is not installed, use the command 
+## pip install numpy
 
 ## Give code running instructions
 
