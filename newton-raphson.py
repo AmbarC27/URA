@@ -134,7 +134,7 @@ def newton_raphson(Y,V,theta,delta,pv_index,p_sched,q_sched,p_curr,q_curr,delta_
     p_res = np.array(p_sched) - np.array(p_curr) ## obtain P_res
     q_res = np.array(q_sched) - np.array(q_curr) ## obtain Q_res
     print("residuals",np.concatenate([p_res,q_res],axis=0)) ## stack together P_res and Q_res vertically
-    x = np.linalg.solve(jacobian,np.concatenate([p_res,q_res],axis=0)) ## x = Jacobian * [p_res,q_res] vertically stacked
+    x = np.linalg.solve(jacobian,np.concatenate([p_res,q_res],axis=0)) ## x = (Jacobian)^(-1) * [p_res,q_res] vertically stacked
 
     ## Printing these values while running to verify their values
     print('x :',x)
